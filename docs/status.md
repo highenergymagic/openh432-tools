@@ -61,3 +61,12 @@ device, not the complete stock conversion, all error paths or general recovery.
   power-loss recovery.
 
 There is no unattended installer or public binary firmware release.
+
+## Guarded volume-update tests
+
+The slot-B update scripts have 48 isolated Python fixture tests covering
+empty-volume provisioning, previous-image matching, geometry and read-only
+guards, image digests, readback, and preservation of slot A. These tests replace
+device paths and update commands with temporary fixtures; they do not open
+hardware or establish power-loss safety. The existing nine host CLI contract
+tests and Rust parser tests remain part of the pinned container test run.

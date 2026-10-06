@@ -84,3 +84,22 @@ No broad world-writable udev rule or automatic driver replacement is installed.
 Windows recovery-driver behavior has not been qualified for this public tool.
 A Windows sync driver and a Linux kernel's `cdc_subset` message are not
 evidence that factory recovery is a COM port.
+
+## Guarded slot-B updates
+
+The `scripts/update-empty-{kernel,systembase}-b.sh` and
+`scripts/update-matching-{kernel,systembase}-b.sh` scripts run on the target
+only in the qualified RAM UBI-writer environment. They do not run as part of
+the host build or CI, and must not be used from a mounted NAND-root system.
+
+They validate the expected NAND geometry, protected factory/BBT partitions,
+read-only MMC, fixed static volume layout, source digest, and preserved slot-A
+digest. Empty-volume variants refuse populated B volumes; matching variants
+require the expected previous B digest. Each performs one explicitly
+confirmed volume update, verifies its readback, and rechecks slot A.
+They do not format NAND, create volumes, update the bootstrap, switch slots,
+or implement atomic kernel/rootfs pair updates. A mismatch or interrupted
+update requires operator diagnosis, not automatic retry.
+
+Run a script without arguments to display its required hashes and exact
+confirmation argument. Keep backups and hash manifests outside public Git.
