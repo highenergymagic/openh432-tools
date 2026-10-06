@@ -19,8 +19,8 @@ const AUTH: &[u8; 4] = b"ATUD";
 const PROBE_VID: u16 = 0x1d50;
 const PROBE_PID: u16 = 0x6152;
 
-fn probe_shell(ctx: &UsbContext, command: &str) -> Result<(), String> {
-    if command.is_empty() || command.len() > 63 || command.as_bytes().contains(&0) {
+fn probe_shell(ctx: &UsbContext, command: Option<&str>) -> Result<(), String> {
+    if command.is_some_and(|c| c.is_empty() || c.len() > 63 || c.as_bytes().contains(&0)) {
         return Err("shell command must contain 1..63 non-NUL bytes".into());
     }
     let mut list = ptr::null();
@@ -40,11 +40,13 @@ fn probe_shell(ctx: &UsbContext, command: &str) -> Result<(), String> {
     unsafe { libusb_free_device_list(list, 1) };
     if rc != 0 { return Err(format!("need exactly one U2 probe (found {}): {}", matches.len(), error_name(rc))); }
     let result = (|| {
+        if let Some(command) = command {
         let mut bytes = command.as_bytes().to_vec();
         let n = unsafe { libusb_control_transfer(handle, 0x40, 0x52, 0x3255, 0x4f50,
             bytes.as_mut_ptr(), bytes.len() as u16, 5000) };
         if n != bytes.len() as i32 {
             return Err(format!("send command: {} ({n}/{})", if n < 0 { error_name(n) } else { "short transfer".into() }, bytes.len()));
+        }
         }
         let started = Instant::now();
         let status = loop {
@@ -56,7 +58,7 @@ fn probe_shell(ctx: &UsbContext, command: &str) -> Result<(), String> {
                 return Err(format!("unexpected command status: {:02x?}", &status[..n as usize]));
             }
             if status[4] == 3 { break status; }
-            if started.elapsed() > Duration::from_secs(60) { return Err("command did not complete in 60 seconds".into()); }
+            if started.elapsed() > Duration::from_secs(180) { return Err("command still running after 180 seconds; use probe-result, do not retry blindly".into()); }
             thread::sleep(Duration::from_millis(100));
         };
         let size = u16::from_le_bytes([status[8], status[9]]) as usize;
@@ -246,7 +248,7 @@ fn time_boot(ctx: &UsbContext, timeout: Duration) -> Result<(), String> {
                 Ok(revision) => {
                     let info_elapsed = disconnected.elapsed();
                     // An actual read-only command proves the shell works, not just EP0.
-                    probe_shell(ctx, "version")?;
+                    probe_shell(ctx, Some("version"))?;
                     let shell_elapsed = disconnected.elapsed();
                     println!("Boot time: USB enumerated {:.3}s; GET_INFO {:.3}s; working shell {:.3}s.",
                         enum_elapsed.as_secs_f64(), info_elapsed.as_secs_f64(), shell_elapsed.as_secs_f64());
@@ -559,7 +561,8 @@ Development operations:
   flash-os IMAGE --confirm-replace-ce
   wait-flash-os IMAGE [SECONDS] --confirm-replace-ce
                                       Replace CE NK slot; read installation guide
-  probe-shell 'COMMAND'               Privileged U-Boot command
+  probe-shell 'COMMAND'               Privileged U-Boot command (180s bound)
+  probe-result                        Read existing result; send no command
   ram-stage-loader FILE | ram-launch-loader FILE
   ram-upload kernel|dtb|initramfs FILE | ram-status | ram-boot
 
@@ -617,7 +620,11 @@ fn run_cli(command: &str, args: Vec<String>) -> Result<(), String> {
         },
         "probe-shell" => {
             if args.len() != 1 { return Err("supply one quoted U-Boot command".into()); }
-            probe_shell(&context()?, &args[0])
+            probe_shell(&context()?, Some(&args[0]))
+        },
+        "probe-result" => {
+            if !args.is_empty() { return Err("probe-result takes no arguments".into()); }
+            probe_shell(&context()?, None)
         },
         "list" | "auth" | "version" => {
             if !args.is_empty() { return Err("unexpected extra arguments".into()); }

@@ -34,5 +34,5 @@ class OfflineCliTests(unittest.TestCase):
         self.assertNotIn("Waiting for", result.stdout)
 
     def test_strict_timeout_and_removed_commands(self):
-        for args in [("wait-auth", "0"), ("list", "extra"), ("commit-staged", "file")]:
+        for args in [("wait-auth", "0"), ("list", "extra"), ("probe-result", "extra"), ("commit-staged", "file")]:
             self.assertNotEqual(self.run_cli(*args).returncode, 0)

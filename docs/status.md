@@ -38,9 +38,21 @@ Validation on 2026-10-06 UTC:
 No USB device is passed to the build/test container. No hardware test or
 flash is part of this repository extraction.
 
+## Subsequent hardware checks
+
+The hardened Linux executable has since programmed the validated USB-shell
+bootstrap and restored the retained NAND-boot carrier on the qualification
+device. Subsequent plain Reset reached Linux. RAM staging/CRC verification,
+RAM launch and diagnostic shell commands have also been exercised.
+The bounded result-only command retrieved an earlier command's output without
+resending it.
+
+These checks cover those operations on one already-modified development
+device, not the complete stock conversion, all error paths or general recovery.
+
 ## Not yet qualified
 
-- Hardware requalification of the hardened public executable.
+- Hardware coverage of all public commands and failure paths.
 - Complete stock-CE-to-Linux conversion using only public repositories.
 - A general pre-modification raw NAND capture path from stock CE.
 - Generalized NAND provisioning, resume and interrupted-install recovery.

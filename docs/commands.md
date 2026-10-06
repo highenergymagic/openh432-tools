@@ -40,7 +40,10 @@ The development U-Boot endpoint is `1d50:6152`.
 - `time-boot`: begin with the U-Boot shell connected, press plain Reset,
   and measure disconnect-to-fresh-shell time. This is not a Linux boot timer.
 
-Errors and truncated command output are reported as failures.
+Errors and truncated command output are reported as failures. The host wait
+bound is 180 seconds; a timeout does not cancel a target command. probe-result
+reads an existing result without sending a new command. Do not blindly resend
+an operation after a timeout.
 
 ## Legacy RAM loader transport
 

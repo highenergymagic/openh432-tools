@@ -57,13 +57,13 @@ impl Probe {
     }
     fn shell(&self, command: &str) -> Result<String, String> {
         self.send_command(command)?;
-        let deadline = Instant::now() + Duration::from_secs(30);
+        let deadline = Instant::now() + Duration::from_secs(180);
         let status = loop {
             let mut s = [0; 12];
             self.control(0xc0, 0x53, 0, 0, &mut s)?;
             if &s[..4] != b"U2CS" { return Err("bad shell status".into()); }
             if s[4] == 3 { break s; }
-            if Instant::now() > deadline { return Err("shell timeout".into()); }
+            if Instant::now() > deadline { return Err("shell timed out after 180 seconds; command may still be running".into()); }
             thread::sleep(Duration::from_millis(1));
         };
         let size = u16::from_le_bytes([status[8], status[9]]) as usize;
