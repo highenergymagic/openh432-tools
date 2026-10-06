@@ -1,0 +1,10 @@
+[package]
+name = "openh432-usb"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "OpenH432 recovery transport and local USB diagnostics"
+build = "build.rs"
+
+[profile.release]
+strip = true

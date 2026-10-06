@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "platform": "linux/amd64",
+  "base_image": "debian@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a",
+  "debian_snapshot": "20261001T000000Z",
+  "builder_uid": 1000,
+  "builder_gid": 1000,
+  "builder_user": "builder",
+  "builder_hostname": "openh432-builder",
+  "source_date_epoch": 1791158400,
+  "rust_version": "1.85.1+dfsg1-1+deb13u1",
+  "libusb_version": "2:1.0.28-1"
+}

@@ -1,0 +1,7 @@
+/target/
+/out/
+/work/
+/backups/
+__pycache__/
+*.pyc
+*.partial

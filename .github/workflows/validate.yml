@@ -1,0 +1,25 @@
+name: Host tools
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Audit tracked sources
+        run: python3 scripts/audit-public.py .
+      - name: Prepare fixed-identity output
+        run: |
+          install -d -m 0700 "$RUNNER_TEMP/openh432-tools"
+          setfacl -m "u:1000:rwx,d:u:1000:rwx,d:u:$(id -u):rwx" "$RUNNER_TEMP/openh432-tools"
+      - name: Test without hardware
+        run: python3 scripts/build.py test --out "$RUNNER_TEMP/openh432-tools"
+      - name: Build without hardware
+        run: python3 scripts/build.py build --out "$RUNNER_TEMP/openh432-tools"
