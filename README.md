@@ -8,8 +8,8 @@ OpenH432 is a Fractal Microsystems project to extend the life of existing
 braille notetakers with Linux. It is independent of HIMS.
 
 **Developer preview:** these tools are not an unattended installer. The
-underlying transport has been used during hardware bring-up; this extracted,
-hardened version has not yet been qualified on a device. Returning a converted
+public transport has passed selected recovery flashing, RAM staging and shell
+operations on an already-converted device. Returning a converted
 device to its complete original Windows CE state is not a tested workflow.
 
 ## Start here
@@ -27,7 +27,7 @@ the tool before pressing the device's recovery keys.
 
 ## Build
 
-Supported build host: Linux x86-64 with Docker, Python 3 and Git. The container
+Host-tool build platform: Linux x86-64 with Docker, Python 3 and Git. The container
 pins its base image, package snapshot and Rust version. Build output must be
 writable by UID/GID 1000:1000. The launcher uses Docker directly or through
 `doas`/`sudo`.

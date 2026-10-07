@@ -1,9 +1,9 @@
 # Validation and release status
 
-This repository begins with host utilities used during OpenH432 hardware
-bring-up, followed by publication hardening. Those are separate baselines.
+Selected public-tool operations are hardware-tested on one already-converted
+H432B. Complete stock conversion and return-to-stock remain unqualified.
 
-## Hardware evidence inherited from bring-up
+## Transport baseline
 
 The predecessor recovery transport has transferred and programmed BSP CE
 carriers. Initial bootstrap USB commands, RAM loading, NAND capture and
@@ -13,7 +13,7 @@ first-stage loader and EBOOT preserved.
 
 This evidence does not qualify all U2 variants or a freshly compiled tool.
 
-## Public extraction
+## Offline validation
 
 The public version adds stricter carrier validation, explicit NAND-write
 confirmation, bounded waits, ambiguous-device rejection and stricter backup
@@ -35,10 +35,9 @@ Validation on 2026-10-06 UTC:
   cross-host or container-rebuild reproducibility.
 - Rust 1.85.1 and libusb 1.0.28 were built/linked from the pinned host container.
 
-No USB device is passed to the build/test container. No hardware test or
-flash is part of this repository extraction.
+No USB device is passed to the build/test container. Hardware operation is separate from compilation and offline tests.
 
-## Subsequent hardware checks
+## Public-tool hardware coverage
 
 The hardened Linux executable has since programmed the validated USB-shell
 bootstrap and restored the retained NAND-boot carrier on the qualification

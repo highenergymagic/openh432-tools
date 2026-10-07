@@ -35,8 +35,8 @@ finished accessible desktop, persistent userdata, or dual boot with CE.
    first replaces CE's NK slot, then captures NAND from Linux. Such a capture
    cannot contain the original NK bytes already replaced. A complete,
    pre-modification backup and tested stock restore are still gaps.
-6. Build the host tool and run its offline tests. Its hardened public version
-   needs hardware requalification before it becomes a recommended installer.
+6. Build the host tool and run its offline tests. Selected public commands are device-tested, but complete conversion and
+   all failure paths are not qualified.
 
 If losing CE functionality or lacking a tested return-to-stock procedure is
 unacceptable, stop here.
@@ -115,7 +115,7 @@ disconnect USB or remove power during programming. The tool reports staging
 and factory NAND acknowledgements line by line. It does not automatically
 repeat a failed flash, restore stock, or prove persistent readback.
 
-A successful transfer has historically launched the installed bootstrap.
+Successful transfers have launched the installed bootstrap in qualification.
 Confirm its shell separately:
 
 ```sh

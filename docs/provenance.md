@@ -5,9 +5,8 @@ the project's original `u2open-libusb` host tool. Python NAND capture,
 inventory and console support originate in the same project's bring-up
 utilities. New host code is published under MIT.
 
-The public extraction changes CLI behavior and validation; it does not
-silently replace the frozen tools or evidence used for earlier hardware
-tests. Firmware remains in the BSP layer. This repository does not contain
+Public tools add strict validation and explicit write confirmation. Hardware
+qualification applies to the exact version and operation tested. Firmware remains in the BSP layer. This repository does not contain
 vendor executable code, CE images, disassembly output or device captures.
 
 USB identifiers, protocol constants and image-layout checks describe the

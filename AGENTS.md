@@ -12,3 +12,12 @@
   are separate qualification claims. Keep docs/status.md accurate.
 - New host code is MIT. Preserve existing copyright/license notices.
 - Audit the exact Git index before public pushes.
+
+## Public documentation
+
+Write task-oriented reference documentation, not a development journal.
+Lead with availability, configuration, interfaces and known limitations.
+Keep normal-runtime support distinct from opt-in diagnostic qualification.
+Put exact artifact/test evidence in validation records; retain superseded
+investigation narratives in Git history and private notes. Check claims against
+recipes and service policy, and run the build repository's documentation audit.

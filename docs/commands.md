@@ -82,8 +82,8 @@ development method is a single explicit `sudo` or `doas` invocation.
 No broad world-writable udev rule or automatic driver replacement is installed.
 
 Windows recovery-driver behavior has not been qualified for this public tool.
-A Windows sync driver and a Linux kernel's `cdc_subset` message are not
-evidence that factory recovery is a COM port.
+Factory recovery uses a bulk USB interface, not a COM port. A Linux
+`cdc_subset` probe error does not prevent direct libusb access.
 
 ## Guarded slot-B updates
 
