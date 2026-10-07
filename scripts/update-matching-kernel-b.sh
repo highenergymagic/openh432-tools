@@ -1,6 +1,6 @@
 #!/bin/sh
 # SPDX-License-Identifier: MIT
-# Run on the target, in the explicitly qualified RAM UBI-writer environment.
+# Run on a writable-UBI target; the target volume must not be in use.
 # Writes only a verified hash-matched kernel_b. No format, creation, attach or reboot.
 set -eu
 test "$#" = 5 || { echo "Usage: $0 IMAGE IMAGE_SHA256 KERNEL_A_SHA256 PREVIOUS_B_SHA256 --confirm-replace-matching-kernel-b" >&2; exit 2; }
@@ -31,7 +31,6 @@ test "$(cat /sys/class/mtd/mtd1/ecc_strength)" = 8
 test "$(( $(cat /sys/class/mtd/mtd1/flags) & 1024 ))" = 1024
 test "$(cat /sys/class/mtd/mtd2/name)" = bbt-reserved
 test "$(( $(cat /sys/class/mtd/mtd2/flags) & 1024 ))" = 0
-test "$(cat /sys/block/mmcblk0/ro)" = 1
 test "$(cat /sys/class/ubi/ubi0/mtd_num)" = 1
 test "$(cat /sys/class/ubi/ubi0/ro_mode)" = 0
 test "$(cat /sys/class/ubi/ubi0/eraseblock_size)" = 126976
@@ -46,8 +45,10 @@ done
 test "$(cat /sys/class/ubi/ubi0_1/data_bytes)" -gt 4096
 printf '%s  %s\n' "$previous_sha" /dev/ubi0_1 | sha256sum -c -
 test "$(cat /sys/class/ubi/ubi0_0/data_bytes)" -gt 4096
-if grep -Eq 'ubi0|ubiblock0' /proc/mounts; then
-    echo "UBI volumes must not be mounted" >&2
+# Refuse even an unmounted block mapping: it may have open readers.
+if test -e /sys/class/block/ubiblock0_1 ||
+   grep -Eq '(^|[[:space:]])([^[:space:]]*/)?(ubi0_1|ubiblock0_1|ubi0:kernel_b)([[:space:]]|$)' /proc/mounts; then
+    echo "Target kernel_b volume must not be mounted or block-mapped" >&2
     exit 1
 fi
 printf '%s  %s\n' "$image_sha" "$image" | sha256sum -c -

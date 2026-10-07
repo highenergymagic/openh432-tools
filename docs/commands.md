@@ -89,12 +89,16 @@ evidence that factory recovery is a COM port.
 
 The `scripts/update-empty-{kernel,systembase}-b.sh` and
 `scripts/update-matching-{kernel,systembase}-b.sh` scripts run on the target
-only in the qualified RAM UBI-writer environment. They do not run as part of
-the host build or CI, and must not be used from a mounted NAND-root system.
+with a writable Linux UBI pool. They never run as part of the host build or CI.
+The historical empty-volume variants require the RAM UBI-writer environment.
+Matching-image variants permit unrelated volumes to remain mounted, but refuse
+a mounted target or an existing target ubiblock mapping. Thus an unmounted
+kernel volume can be updated from the normal NAND-root system; replacing
+the active systembase still requires booting a different root.
 
 They validate the expected NAND geometry, protected factory/BBT partitions,
-read-only MMC, fixed static volume layout, source digest, and preserved slot-A
-digest. Empty-volume variants refuse populated B volumes; matching variants
+fixed static volume layout, source digest, and preserved slot-A digest.
+Matching-image updates do not require unrelated MMC devices to be read-only. Empty-volume variants refuse populated B volumes; matching variants
 require the expected previous B digest. Each performs one explicitly
 confirmed volume update, verifies its readback, and rechecks slot A.
 They do not format NAND, create volumes, update the bootstrap, switch slots,

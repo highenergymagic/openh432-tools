@@ -31,6 +31,25 @@ class MatchingMixin:
         (self.dev / self.node).write_bytes(b"unexpected previous image")
         self.refused()
 
+    def test_unrelated_mounted_root_and_writable_sd_allowed(self):
+        other = "ubi0_4" if self.vol == 1 else "ubi0_3"
+        self.write(self.root / "proc/mounts", "/dev/ubiblock" + other[3:] + " /lower squashfs ro 0 0")
+        self.write(self.sys / "block/mmcblk0/ro", "0")
+        result = self.run_update()
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_target_mount_refused(self):
+        self.write(self.root / "proc/mounts", "/dev/ubiblock0_" + str(self.vol) + " /lower squashfs ro 0 0")
+        self.refused()
+
+    def test_target_named_mount_refused(self):
+        self.write(self.root / "proc/mounts", "ubi0:" + self.kind + "_b /lower ubifs ro 0 0")
+        self.refused()
+
+    def test_target_block_mapping_refused(self):
+        (self.sys / ("class/block/ubiblock0_" + str(self.vol))).mkdir(parents=True)
+        self.refused()
+
     def test_empty_b_refused(self):
         self.attr(self.vol, "data_bytes", "0")
         self.refused()
