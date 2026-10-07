@@ -17,8 +17,9 @@ environment then provides backup and storage inspection. Provisioning a Linux
 UBI pool destroys the previous CE data in that pool; it does not repartition
 the internal SD card. The final bootstrap loads Linux from NAND.
 
-Current NAND boots run a debug initramfs, not a finished accessible desktop
-or a persistent production root filesystem. This is not dual boot with CE.
+Current NAND boots use a minimal initramfs to mount a separate SquashFS
+systembase and start systemd. Writable state is volatile; this is not a
+finished accessible desktop, persistent userdata, or dual boot with CE.
 
 ## Before you begin
 
@@ -144,7 +145,11 @@ must NEVER be wrapped as the persistent low-address bootstrap.
 Use the standard fastboot host tool as described in the
 [BSP fastboot guide](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/fastboot.md)
 to boot `openh432-ram-boot.img`. Fastboot flash and erase are not implemented;
-fastboot boot does not install Linux to NAND.
+fastboot boot does not install Linux to NAND. This standalone recovery bundle
+uses the runtime kernel: Linux UBI and internal SD writes are permitted, with
+the factory boot and BBT regions protected. It does not automatically mount,
+format or provision persistent storage; do not treat it as a read-only backup
+configuration.
 
 Once Linux enumerates, use `scripts/watch-console.py` for read-only boot
 diagnostics. Only one tool may own the USB console at a time.
@@ -196,14 +201,17 @@ unprovisioned pool and expect it to install the OS.
 ## 7. Enable and verify NAND boot
 
 After the pool is provisioned and verified, the BSP target
-`u-boot-h432b-chain` builds the persistent NAND bootstrap carrier at
-`nand56-ce-carrier/u-boot-ce.b000ff` within the deploy directory. Validate
-and explicitly flash that carrier through the same factory OS route.
+`u-boot-h432b-maintenance-chain` builds the persistent NAND bootstrap carrier at
+`nand-maintenance-ce-carrier/u-boot-ce.b000ff` within the deploy directory. Validate
+and explicitly flash that carrier through the same factory OS route. It
+selects `kernel_b`, which must contain `openh432-nand-b.img`, with a matching
+`systembase_b` populated from `openh432-systembase-b`. It is not automatic
+A/B selection.
 
 Qualification requires raw readback of the installed carrier, comparison of
 the factory boot prefix against its backup, and at least two plain-Reset
 Linux boots with no uploader or RAM-staging tool running. Check UBI integrity,
-ECC status, kernel identity, systemd health and read-only storage policy.
+ECC status, kernel identity, systemd health and factory-region protections.
 
 These reset tests have passed on the development device. They do not prove
 power-loss recovery, endurance, complete stock restoration or support for
