@@ -1,36 +1,27 @@
 # OpenH432 host tools
 
-Command-line tools for developing and installing OpenH432 on the HIMS
-BrailleSense U2. This repository provides the Linux-host USB transport,
-NAND-backup utilities and operator documentation.
+Linux command-line tools for installing and maintaining OpenH432 on the
+HIMS BrailleSense U2. This repository provides USB transport, NAND-backup
+utilities and installation documentation.
 
-OpenH432 is a Fractal Microsystems project to extend the life of existing
-braille notetakers with Linux. It is independent of HIMS.
+Device firmware is built separately by
+[openh432-build](https://github.com/highenergymagic/openh432-build).
+Bootloader and kernel sources belong to the
+[hardware layer](https://github.com/highenergymagic/meta-fractalmicro-H432B).
 
-**Developer preview:** these tools are not an unattended installer. The
-public transport has passed selected recovery flashing, RAM staging and shell
-operations on an already-converted device. Returning a converted
-device to its complete original Windows CE state is not a tested workflow.
+## Requirements
 
-## Start here
+- Linux x86-64, Git, Python 3 and Docker for the pinned host-tool build.
+- An output directory writable by UID/GID `1000:1000`.
+- libusb-1.0 and a glibc-compatible Linux host to run the USB executable;
+  the build container uses glibc 2.41.
+- USB device access permissions for live operations.
 
-- [Installation guide](docs/installation.md): from stock Windows CE through
-  bootstrap, RAM Linux, backup and persistent NAND boot, with qualification gates.
-- [Backup and recovery](docs/recovery.md): what can be preserved, what a backup
-  proves and which restore steps remain untested.
-- [CLI reference](docs/commands.md): commands, side effects and USB identities.
-- [Validation status](docs/status.md): tests versus hardware qualification.
+The host-tool builder supports x86-64 only. This is separate from the BSP
+image builder, which also supports native ARM64. Windows and macOS are
+not supported host-tool platforms.
 
-The tools use plain line-oriented output rather than a graphical interface,
-color-only status or animated progress. Waiting commands let an operator start
-the tool before pressing the device's recovery keys.
-
-## Build
-
-Host-tool build platform: Linux x86-64 with Docker, Python 3 and Git. The container
-pins its base image, package snapshot and Rust version. Build output must be
-writable by UID/GID 1000:1000. The launcher uses Docker directly or through
-`doas`/`sudo`.
+## Build and test
 
 ```sh
 git clone https://github.com/highenergymagic/openh432-tools.git
@@ -40,44 +31,36 @@ python3 scripts/build.py build
 ./out/target/release/openh432-usb --help
 ```
 
-Container setup requires network access; compilation and tests run offline,
-without USB devices. No build or test command flashes anything. The host
-executable needs the libusb-1.0 runtime and a compatible glibc (the current
-builder uses glibc 2.41). Windows and macOS hosts are not supported yet.
+The launcher pins the container, package snapshot and Rust toolchain.
+Container setup requires network access; compilation and tests run offline
+without USB access. Python utilities require no third-party Python packages.
 
-Python backup and console scripts run on the Linux host with Python 3; no
-third-party Python packages are required. Do not run USB operations inside
-the isolated build container.
+## Operation
 
-## First connection
+Run live commands on the Linux host, outside the build container. The CLI
+uses line-oriented output and provides waiting commands so an operation can
+be prepared before entering device recovery.
 
-Connect only one U2. From this repository, start the handshake waiter with
-the host privileges needed to open the USB device:
+Start with the [installation guide](docs/installation.md). Recovery flashing
+replaces the stock CE kernel slot; it is not a temporary RAM boot.
+These tools are a developer workflow, not an unattended installer.
+Complete restoration to stock Windows CE is not a qualified procedure.
 
-```sh
-sudo ./out/target/release/openh432-usb wait-auth 120
-```
+## Documentation
 
-Use `doas` instead of `sudo` where appropriate. Hold Previous/left-media,
-press Reset, and keep the key held through reset. The factory recovery
-endpoint is `0547:2720`, not a serial port. A successful handshake does not
-write NAND and does not establish that an image is safe to install.
+- [Installation](docs/installation.md): stock CE conversion and NAND deployment.
+- [Command reference](docs/commands.md): syntax, device modes and side effects.
+- [Backup and recovery](docs/recovery.md): capture, verification and recovery limits.
+- [Validation](docs/status.md): tested operations and outstanding qualification.
 
-Read the installation guide before using any flashing command. Flashing
-replaces the CE kernel slot; it is not merely a temporary RAM boot.
+Report reproducible tool problems through
+[repository issues](https://github.com/highenergymagic/openh432-tools/issues).
+Do not attach firmware, raw device dumps, credentials or identifying logs.
 
-## Repository boundaries
+## Licence
 
-- [openh432-build](https://github.com/highenergymagic/openh432-build) builds
-  pinned firmware and operating-system artifacts.
-- [meta-fractalmicro-H432B](https://github.com/highenergymagic/meta-fractalmicro-H432B)
-  owns the loader firmware, kernel and board support.
-- [meta-fractalmicro-openh432](https://github.com/highenergymagic/meta-fractalmicro-openh432)
-  owns OS policy and image composition.
-- This repository owns host-side transport, backup verification and installation
-  documentation. It contains no vendor firmware, compiled firmware or backups.
+Host tools and documentation are MIT-licensed. Firmware and operating-system
+components retain their upstream licences. No vendor firmware or device
+backups are distributed here.
 
-## License
-
-MIT for the host tools and documentation. Firmware and operating-system
-components retain their respective upstream licenses.
+OpenH432 is an independent Fractal Microsystems project, not endorsed by HIMS.
