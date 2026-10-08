@@ -105,5 +105,11 @@ They do not format NAND, create volumes, update the bootstrap, switch slots,
 or implement atomic kernel/rootfs pair updates. A mismatch or interrupted
 update requires operator diagnosis, not automatic retry.
 
+With the A/B loader installed, the operator must make B ineligible before
+replacing either B image, then verify both images before reactivating it.
+These scripts do not perform that transaction or alter attempt counters.
+The target-side bootstate checker and boot-success service are provided by the
+BSP layers, not this host tool. Follow the [boot contract](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/boot-contract.md#persistent-boot-policy).
+
 Run a script without arguments to display its required hashes and exact
 confirmation argument. Keep backups and hash manifests outside public Git.

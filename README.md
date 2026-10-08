@@ -46,6 +46,10 @@ replaces the stock CE kernel slot; it is not a temporary RAM boot.
 These tools are a developer workflow, not an unattended installer.
 Complete restoration to stock Windows CE is not a qualified procedure.
 
+The runtime A/B selector and `h432b-bootstate-check` utility are built by the
+BSP, not this host-tool repository. Existing slot-B maintenance scripts are
+not an A/B updater; read the installation guide before modifying eligible slots.
+
 ## Documentation
 
 - [Installation](docs/installation.md): stock CE conversion and NAND deployment.

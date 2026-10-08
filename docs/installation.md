@@ -18,8 +18,9 @@ UBI pool destroys the previous CE data in that pool; it does not repartition
 the internal SD card. The final bootstrap loads Linux from NAND.
 
 Current NAND boots use a minimal initramfs to mount a separate SquashFS
-systembase and start systemd. Writable state is volatile; this is not a
-finished accessible desktop, persistent userdata, or dual boot with CE.
+systembase and start systemd, BRLTTY and an interactive local `user` console.
+Writable state is volatile; this is not a finished accessible desktop,
+persistent userdata, or dual boot with CE.
 
 ## Before you begin
 
@@ -188,6 +189,9 @@ A general implementation must:
 - Obtain a separate confirmation before replacing CE data in that pool.
 - Provision UBI volumes, populate the selected kernel and systembase volumes,
   and verify complete readbacks, filesystem contents and ECC results.
+- Create both redundant dynamic bootstate volumes with the documented geometry.
+  Initialize and read back valid state that enables only fully populated slots.
+  Never replace existing boot state with initial defaults during an update.
 - Leave a usable recovery/bootstrap path if any intermediate step fails.
 
 See the [NAND contract](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/nand.md)
@@ -201,12 +205,24 @@ unprovisioned pool and expect it to install the OS.
 ## 7. Enable and verify NAND boot
 
 After the pool is provisioned and verified, the BSP target
-`u-boot-h432b-maintenance-chain` builds the persistent NAND bootstrap carrier at
-`nand-maintenance-ce-carrier/u-boot-ce.b000ff` within the deploy directory. Validate
+`u-boot-h432b-ab-chain` builds the persistent NAND bootstrap carrier at
+`nand-ab-ce-carrier/u-boot-ce.b000ff` within the deploy directory. Validate
 and explicitly flash that carrier through the same factory OS route. It
-selects `kernel_b`, which must contain `openh432-nand-b.img`, with a matching
-`systembase_b` populated from `openh432-systembase-b`. It is not automatic
-A/B selection.
+selects an eligible kernel/systembase pair using redundant boot state. The
+historically named `openh432-nand-b.img` and `openh432-systembase-b` outputs
+are slot-independent and can populate either pair.
+
+The target-side `h432b-bootstate-check --emit-initial-b` emits an initial
+B-only state record to standard output; it does not provision or write NAND.
+Use it only for initial provisioning after validating B's complete image pair.
+The state volumes must exist and contain valid records before installing this
+carrier. Invalid or exhausted state enters maintenance rather than inventing
+defaults. See the [boot policy](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/boot-contract.md#persistent-boot-policy)
+for exact geometry, state encoding and update ordering.
+
+The earlier `nand-maintenance-ce-carrier` remains a fixed-B maintenance option,
+not an A/B selector. Existing slot-B update scripts do not coordinate boot
+state or paired activation.
 
 Qualification requires raw readback of the installed carrier, comparison of
 the factory boot prefix against its backup, and at least two plain-Reset
