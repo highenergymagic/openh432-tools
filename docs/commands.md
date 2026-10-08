@@ -66,6 +66,11 @@ RAM-only loaders do not become persistent merely because they execute.
   development USB console. It reads NAND and writes private host backup files.
 - `inventory-nand-backup.py`: offline coverage/checksum verification and
   physical eraseblock inventory. It never opens USB or writes NAND.
+- `push-runtime-file.py FILE --name NAME`: transfer a file of up to 64 MiB
+  into a private directory under target `/tmp`, verify SHA256, and refuse
+  existing destinations. Requires tmpfs; never executes or flashes the file.
+  After an interrupted raw transfer, reset the development device before
+  reopening its shell. Do not retry automatically.
 - `watch-console.py`: wait for the development Linux console and run
   diagnostic commands. Its default checks are read-only. Explicit
   `--command` and `--command-file` execute privileged shell input;

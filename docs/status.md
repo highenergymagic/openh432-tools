@@ -49,6 +49,18 @@ resending it.
 These checks cover those operations on one already-modified development
 device, not the complete stock conversion, all error paths or general recovery.
 
+## Runtime console tools
+
+Console discovery tolerates sysfs removal during USB disconnect and rejects
+multiple matching devices. The tmpfs transfer utility validates destination
+names, refuses overwrite, verifies the received SHA-256 and never executes
+or flashes its payload. Interrupted transfers require operator recovery;
+there is no automatic retry.
+
+The pinned host-tool suite passes 14 Rust tests, 79 Python tests and nine
+optimized-Python checks. Discovery-race and transfer-contract tests use mocks;
+they do not qualify every disconnect timing or establish power-loss safety.
+
 ## Not yet qualified
 
 - Hardware coverage of all public commands and failure paths.

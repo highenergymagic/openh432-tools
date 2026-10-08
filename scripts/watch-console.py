@@ -29,8 +29,12 @@ def find_console():
                         and (parent / 'serial').read_text().strip() == 'H432-RAM-TEST'):
                     matches.append('/dev/' + Path(entry).name)
                     break
-            except (FileNotFoundError, PermissionError):
-                continue
+            except OSError as exc:
+                # USB sysfs attributes can disappear between path discovery
+                # and read(), including ENODEV while a gadget disconnects.
+                if exc.errno in (errno.ENOENT, errno.ENODEV, errno.EACCES):
+                    continue
+                raise
     if len(matches) > 1:
         raise RuntimeError('multiple OpenH432 consoles found; connect exactly one device')
     return matches[0] if matches else None
