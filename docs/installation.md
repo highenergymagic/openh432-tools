@@ -67,8 +67,8 @@ Follow the build repository's container setup and checkout instructions.
 From its checkout, build the low-address bootstrap and fastboot RAM loader:
 
 ```sh
-python3 scripts/bsp.py fetch u-boot-h432b u-boot-h432b-fastboot openh432-fastboot-ram
-python3 scripts/bsp.py build u-boot-h432b u-boot-h432b-fastboot openh432-fastboot-ram
+python3 scripts/bsp.py fetch u-boot-h432b u-boot-h432b-fastboot openh432-fastboot-ram --without-wifi
+python3 scripts/bsp.py build u-boot-h432b u-boot-h432b-fastboot openh432-fastboot-ram --without-wifi
 ```
 
 The low-address raw artifact is
