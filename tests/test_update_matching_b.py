@@ -7,6 +7,10 @@ import test_update_empty_kernel_b as kernel
 import test_update_empty_systembase_b as base
 
 class MatchingMixin:
+    # Matching updates run from a booted system and do not check the internal SD.
+    test_writable_internal_sd_refused_despite_readonly_card = None
+    test_missing_internal_sd_refused = None
+
     def setUp(self):
         source = self.module.SOURCE
         self.module.SOURCE = source.with_name(source.name.replace("empty", "matching"))
@@ -34,7 +38,7 @@ class MatchingMixin:
     def test_unrelated_mounted_root_and_writable_sd_allowed(self):
         other = "ubi0_4" if self.vol == 1 else "ubi0_3"
         self.write(self.root / "proc/mounts", "/dev/ubiblock" + other[3:] + " /lower squashfs ro 0 0")
-        self.write(self.sys / "block/mmcblk0/ro", "0")
+        self.write(self.internal / "ro", "0")
         result = self.run_update()
         self.assertEqual(result.returncode, 0, result.stderr)
 

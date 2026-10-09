@@ -30,7 +30,19 @@ test "$(cat /sys/class/mtd/mtd1/ecc_strength)" = 8
 test "$(( $(cat /sys/class/mtd/mtd1/flags) & 1024 ))" = 1024
 test "$(cat /sys/class/mtd/mtd2/name)" = bbt-reserved
 test "$(( $(cat /sys/class/mtd/mtd2/flags) & 1024 ))" = 0
-test "$(cat /sys/block/mmcblk0/ro)" = 1
+# Resolve the internal SD by controller; MMC numbering follows probe order.
+internal_sd=
+for candidate in /sys/class/block/mmcblk*; do
+    test -e "$candidate/partition" && continue
+    case "$(readlink -f "$candidate")" in
+        */eb100000.mmc/mmc_host/*/block/mmcblk*)
+            test -z "$internal_sd"
+            internal_sd=$candidate
+            ;;
+    esac
+done
+test -n "$internal_sd"
+test "$(cat "$internal_sd/ro")" = 1
 test "$(cat /sys/class/ubi/ubi0/mtd_num)" = 1
 test "$(cat /sys/class/ubi/ubi0/ro_mode)" = 0
 test "$(cat /sys/class/ubi/ubi0/eraseblock_size)" = 126976

@@ -27,7 +27,7 @@ class KernelBUpdate(unittest.TestCase):
             "class/mtd/mtd1/writesize": "2048", "class/mtd/mtd1/erasesize": "131072",
             "class/mtd/mtd1/ecc_strength": "8", "class/mtd/mtd1/flags": "1024",
             "class/mtd/mtd2/name": "bbt-reserved", "class/mtd/mtd2/flags": "0",
-            "block/mmcblk0/ro": "1", "class/ubi/ubi0/mtd_num": "1",
+            "class/ubi/ubi0/mtd_num": "1",
             "class/ubi/ubi0/ro_mode": "0", "class/ubi/ubi0/eraseblock_size": "126976"}
         for key, value in attrs.items():
             self.write(self.sys / key, value)
@@ -36,6 +36,7 @@ class KernelBUpdate(unittest.TestCase):
                                "corrupted": "0", "upd_marker": "0",
                                "data_bytes": "8192" if i == 0 else "0"}.items():
                 self.attr(i, key, value)
+        self.internal = self.mmc(1, "eb100000.mmc", "1")
         self.a = b"A" * 8192
         self.image = b"B" * 8192
         (self.dev / "ubi0_0").write_bytes(self.a)
@@ -54,6 +55,16 @@ class KernelBUpdate(unittest.TestCase):
         self.mock("sync", ":")
         self.mock("ubiupdatevol", 'echo written > "$FIXTURE/wrote"; cp "$2" "$1"; '
                   'stat -c %s "$2" > "$FIXTURE/sys/class/ubi/ubi0_1/data_bytes"')
+
+    def mmc(self, index, controller, ro):
+        """sysfs block device under its controller, as the kernel lays it out."""
+        node = (self.sys / "devices/platform/soc" / controller / "mmc_host" /
+                ("mmc%d" % index) / ("mmc%d:0001" % index) / "block" / ("mmcblk%d" % index))
+        self.write(node / "ro", ro)
+        link = self.sys / "class/block" / ("mmcblk%d" % index)
+        link.parent.mkdir(parents=True, exist_ok=True)
+        link.symlink_to(node)
+        return node
 
     def write(self, path, text):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -74,6 +85,21 @@ class KernelBUpdate(unittest.TestCase):
             digest or hashlib.sha256(self.image).hexdigest(),
             hashlib.sha256(self.a).hexdigest(), "--confirm-write-empty-kernel-b"],
             env=env, capture_output=True, text=True)
+
+    def test_internal_sd_resolved_by_controller(self):
+        # A writable removable card enumerated first as mmcblk0.
+        self.mmc(0, "eb200000.mmc", "0")
+        self.assertEqual(self.run_update().returncode, 0)
+
+    def test_writable_internal_sd_refused_despite_readonly_card(self):
+        self.mmc(0, "eb200000.mmc", "1")
+        self.write(self.internal / "ro", "0")
+        self.refused()
+
+    def test_missing_internal_sd_refused(self):
+        (self.sys / "class/block/mmcblk1").unlink()
+        self.mmc(0, "eb200000.mmc", "1")
+        self.refused()
 
     def refused(self):
         self.assertNotEqual(self.run_update().returncode, 0)
