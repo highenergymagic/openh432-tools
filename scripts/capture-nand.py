@@ -110,6 +110,7 @@ def main():
     p.add_argument("--length",type=lambda x:int(x,0))
     p.add_argument("--chunk",type=lambda x:int(x,0),default=4<<20)
     p.add_argument("--timeout",type=int,default=180)
+    p.add_argument("--serial", help="Select an exact USB identity")
     a=p.parse_args()
     _,base,size=REGIONS[a.region]
     if a.start is None: a.start=base
@@ -120,9 +121,9 @@ def main():
         p.error("bounded eraseblock-aligned NAND range required")
     if a.timeout <= 0: p.error("timeout must be positive")
     a.output.mkdir(parents=True,exist_ok=True,mode=0o700)
-    dev=console.find_console()
+    dev=console.find_console(a.serial)
     if not dev:
-        raise RuntimeError("exact OpenH432-RAM console absent")
+        raise RuntimeError("identified OpenH432 Linux console absent")
     fd=os.open(dev,os.O_RDWR|os.O_NOCTTY|os.O_NONBLOCK)
     attrs=termios.tcgetattr(fd)
     attrs[0]=attrs[1]=attrs[3]=0

@@ -25,9 +25,13 @@ Prerequisites: Linux is already running in RAM with the qualified
 read-only full-device MTD view named `u2-nand-raw-readonly`, 512 MiB main
 data, 2048-byte pages and 64-byte OOB. The kernel needs the appropriate raw
 NAND support, and the RAM image needs `nanddump`, gzip and base64.
-The USB console must identify as `OpenH432-RAM` / `H432-RAM-TEST`.
-These are development protocol identifiers, not security credentials or
-unique per-device serial numbers.
+The host console tools recognize the Linux ACM interface as
+`Fractal Microsystems` / `Braille Sense U2 (Linux)`. Its USB serial, when
+available, is the validated factory-Ethernet-MAC-derived `FM-H432B-MAC-…`
+board ID, not a verified manufacturer serial number. Use `--serial` to select
+one device when more than one is attached; ambiguous matches are rejected.
+The historical exact `OpenH432-RAM` / `H432-RAM-TEST` identity remains accepted
+for installed images. USB descriptors are discovery aids, not authentication.
 
 The default partitioned kernel does not necessarily provide this view.
 Do not rename a partition or remove geometry checks to make the tool proceed.

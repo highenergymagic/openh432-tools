@@ -56,14 +56,14 @@ sha256sum {dest}
     return dest, command
 
 
-def push(source, name, timeout):
+def push(source, name, timeout, serial=None):
     # Reject invalid names before reading a potentially large source.
     transfer_command(name, 1, "0" * 24)
     data = source.read_bytes()
     token = secrets.token_hex(12)
     dest, command = transfer_command(name, len(data), token)
     expected = hashlib.sha256(data).hexdigest()
-    device = console.find_console()
+    device = console.find_console(serial)
     if not device:
         raise RuntimeError("identified OpenH432 development console absent")
     fd = os.open(device, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
@@ -119,7 +119,8 @@ if __name__ == "__main__":
     parser.add_argument("source", type=Path)
     parser.add_argument("--name", required=True)
     parser.add_argument("--timeout", type=int, default=300)
+    parser.add_argument("--serial", help="Select an exact USB identity")
     args = parser.parse_args()
     if args.timeout <= 0 or args.timeout > 300:
         parser.error("timeout must be 1..300 seconds")
-    push(args.source, args.name, args.timeout)
+    push(args.source, args.name, args.timeout, args.serial)

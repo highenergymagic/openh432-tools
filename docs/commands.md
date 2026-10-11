@@ -76,7 +76,11 @@ RAM-only loaders do not become persistent merely because they execute.
   `--command` and `--command-file` execute privileged shell input;
   they are not confined to read-only operations.
 
-Console discovery rejects multiple matching devices. Use only one host
+All three console tools accept `--serial DEVICE_ID` to select a specific
+MAC-derived USB board ID. Discovery checks the ACM interface and USB identity,
+accepts legacy installed-image identifiers, and rejects multiple matches even
+when the requested serial is duplicated. These descriptors are not credentials.
+Use only one host
 client at a time. Do not expose these privileged physical interfaces
 through a network.
 
