@@ -57,7 +57,7 @@ names, refuses overwrite, verifies the received SHA-256 and never executes
 or flashes its payload. Interrupted transfers require operator recovery;
 there is no automatic retry.
 
-The pinned host-tool suite passes 14 Rust tests, 79 Python tests and nine
+The pinned host-tool suite passes 14 Rust tests, 87 Python tests and nine
 optimized-Python checks. Discovery-race and transfer-contract tests use mocks;
 they do not qualify every disconnect timing or establish power-loss safety.
 
