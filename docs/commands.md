@@ -94,7 +94,29 @@ Windows recovery-driver behavior has not been qualified for this public tool.
 Factory recovery uses a bulk USB interface, not a COM port. A Linux
 `cdc_subset` probe error does not prevent direct libusb access.
 
-## Guarded slot-B updates
+## Inactive-slot verity installation
+
+`scripts/install-verity-slot.sh` runs on the target and replaces an inactive
+kernel/systembase pair. Supply the matching kernel bundle, `.squashfs.verity`
+image and both expected SHA-256 digests:
+
+```sh
+sh install-verity-slot.sh A kernel.img systembase.squashfs.verity KERNEL_SHA256 IMAGE_SHA256 --confirm-replace-inactive-slot
+```
+
+The active slot must already be acknowledged healthy. The tool clears the
+target's attempt allowance, updates its kernel, recreates only its systembase
+volume with UBI's skip-scan flag, and verifies both NAND readbacks before
+selecting the new pair. Recreating the inactive volume destroys its previous
+contents. The active pair, factory loader and other volumes remain unchanged.
+Reboot separately and confirm the accessible console before acknowledging
+deployment success. Hashes identify the supplied pair; this tool does not
+authenticate releases or implement a complete update transport.
+
+## Legacy guarded slot-B updates
+
+The scripts below predate verity pairing and do not perform the volume-flag
+migration. Use the paired installer above for the standard NAND image.
 
 The `scripts/update-empty-{kernel,systembase}-b.sh` and
 `scripts/update-matching-{kernel,systembase}-b.sh` scripts run on the target

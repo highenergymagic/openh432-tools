@@ -47,8 +47,10 @@ These tools are a developer workflow, not an unattended installer.
 Complete restoration to stock Windows CE is not a qualified procedure.
 
 The runtime A/B selector and `h432b-bootstate-check` utility are built by the
-BSP, not this host-tool repository. Existing slot-B maintenance scripts are
-not an A/B updater; read the installation guide before modifying eligible slots.
+BSP, not this host-tool repository. The target-side inactive-slot installer
+updates a matching kernel/verity-root pair and verifies NAND readback. It is
+not an authenticated update service; older slot-B scripts do not implement
+verity migration. Read the installation guide before modifying eligible slots.
 
 ## Documentation
 

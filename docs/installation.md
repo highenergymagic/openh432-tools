@@ -211,6 +211,11 @@ and explicitly flash that carrier through the same factory OS route. It
 selects an eligible kernel/systembase pair using redundant boot state. The
 historically named `openh432-nand-b.img` and `openh432-systembase-b` outputs
 are slot-independent and can populate either pair.
+For the standard OS, install the `.squashfs.verity` systembase and its matching
+kernel bundle together. Systembase volumes require UBI's `--skipcheck` creation
+flag; do not enable it on unverified legacy roots. The target-side
+[inactive-slot installer](commands.md#inactive-slot-verity-installation)
+migrates one existing slot without modifying the active pair.
 
 The target-side `h432b-bootstate-check --emit-initial-b` emits an initial
 B-only state record to standard output; it does not provision or write NAND.
