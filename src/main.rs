@@ -564,6 +564,7 @@ Development operations:
   probe-shell 'COMMAND'               Privileged U-Boot command (180s bound)
   probe-result                        Read existing result; send no command
   ram-stage-loader FILE | ram-launch-loader FILE
+  ram-check-modern ELF BIN | ram-launch-modern ELF BIN
   ram-upload kernel|dtb|initramfs FILE | ram-status | ram-boot
 
 Waits default to 120 seconds. Connect exactly one device.

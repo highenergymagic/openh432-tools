@@ -33,7 +33,15 @@ pub fn validate(image: &[u8]) -> Result<(), String> {
         || &payload[0x220..0x227] != b"nk.exe\0" {
         return Err("invalid single-module NK table".into());
     }
-    if payload[0x1003] != 0xea || word(payload, 0x1040) != 0x40021000 {
+    let modern = &payload[0x310..0x314] == b"MUB1";
+    let valid_role = if modern {
+        word(payload, 0x314) == 0x40021000
+            && word(payload, 0x318) as usize == payload.len() - 0x1000
+            && word(payload, 0x31c) == crate::ram::crc32(&payload[0x1000..])
+    } else {
+        word(payload, 0x1040) == 0x40021000
+    };
+    if payload[0x1003] != 0xea || !valid_role {
         return Err("wrong U-Boot link address; RAM-only loaders cannot be flashed".into());
     }
     Ok(())
@@ -64,6 +72,27 @@ mod tests {
         b
     }
     #[test] fn accepts_bounded_carrier() { assert!(validate(&fixture()).is_ok()); }
+    fn modern_fixture() -> Vec<u8> {
+        let mut b = fixture();
+        put(&mut b, 27 + 0x1040, 0);
+        b[27 + 0x310..27 + 0x314].copy_from_slice(b"MUB1");
+        put(&mut b, 27 + 0x314, 0x40021000);
+        let length = b.len() - 39 - 0x1000;
+        put(&mut b, 27 + 0x318, length as u32);
+        let crc = crate::ram::crc32(&b[27 + 0x1000..b.len() - 12]);
+        put(&mut b, 27 + 0x31c, crc);
+        reseal(&mut b);
+        b
+    }
+    #[test] fn accepts_modern_carrier() { assert!(validate(&modern_fixture()).is_ok()); }
+    #[test] fn rejects_modern_role_corruption() {
+        for offset in [0x310, 0x314, 0x318, 0x31c, 0x1010] {
+            let mut b = modern_fixture();
+            b[27 + offset] ^= 1;
+            reseal(&mut b);
+            assert!(validate(&b).is_err());
+        }
+    }
     #[test] fn rejects_every_truncation() {
         let b=fixture();
         for n in 0..b.len() { assert!(validate(&b[..n]).is_err()); }

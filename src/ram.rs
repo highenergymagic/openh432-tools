@@ -5,6 +5,70 @@ use super::*;
 const ADDRESSES: [u32; 3] = [0x42000000, 0x44000000, 0x44400000];
 const LIMITS: [usize; 3] = [32 << 20, 1 << 20, 16 << 20];
 const LOADER: u32 = 0x46000000;
+const MODERN: u32 = 0x42000000;
+
+// The ELF establishes the link address; the binary includes its appended DTB.
+// This validates the fixed RAM test role, not authenticity of arbitrary code.
+fn modern_image(elf: &[u8], bin: &[u8]) -> Result<(), String> {
+    let bad = || "not a matching ARM ELF/binary for modern RAM entry at 42000000".to_string();
+    if elf.len() < 52 || elf.len() > 8 << 20 || bin.len() < 68 || bin.len() > 1 << 20
+        || bin.len() % 4 != 0 || bin[3] != 0xea || &elf[..7] != b"\x7fELF\x01\x01\x01" {
+        return Err(bad());
+    }
+    let half = |n| u16::from_le_bytes(elf[n..n+2].try_into().unwrap());
+    let word = |n| u32::from_le_bytes(elf[n..n+4].try_into().unwrap());
+    if half(16) != 2 || half(18) != 40 || word(20) != 1 || word(24) != MODERN
+        || half(40) != 52 || half(42) != 32 { return Err(bad()); }
+    let ph = word(28) as usize;
+    let count = half(44) as usize;
+    if count == 0 || count > 16 || ph < 52 || ph.checked_add(count * 32).filter(|&n| n <= elf.len()).is_none() {
+        return Err(bad());
+    }
+    let mut loads = 0;
+    for n in (ph..ph + count * 32).step_by(32) {
+        if word(n) != 1 { continue; }
+        loads += 1;
+        let off = word(n+4) as usize;
+        let size = word(n+16) as usize;
+        let mem = word(n+20) as usize;
+        if word(n+8) != MODERN || word(n+12) != MODERN || word(n+24) & 1 == 0
+            || size < 68 || size > bin.len() || mem < size || mem > 1 << 20
+            || off.checked_add(size).filter(|&end| end <= elf.len()).is_none() { return Err(bad()); }
+        if elf[off..off+size] != bin[..size] {
+            // objcopy uses 0xff for alignment gaps, while ELF uses zero.
+            // Only permit that difference outside allocated file sections.
+            let sh = word(32) as usize;
+            let sc = half(48) as usize;
+            if half(46) != 40 || sc == 0 || sc > 1024 || sh < 52
+                || sh.checked_add(sc * 40).filter(|&end| end <= elf.len()).is_none() {
+                return Err(bad());
+            }
+            let mut covered = vec![false; size];
+            for s in (sh..sh + sc * 40).step_by(40) {
+                if word(s+8) & 2 == 0 || word(s+4) == 8 { continue; }
+                let start = word(s+12).checked_sub(MODERN).ok_or_else(bad)? as usize;
+                let len = word(s+20) as usize;
+                let end = start.checked_add(len).filter(|&v| v <= size).ok_or_else(bad)?;
+                covered[start..end].fill(true);
+            }
+            for i in 0..size {
+                if elf[off+i] != bin[i] && (covered[i] || elf[off+i] != 0 || bin[i] != 0xff) {
+                    return Err(bad());
+                }
+            }
+        }
+    }
+    if loads != 1 { return Err(bad()); }
+    Ok(())
+}
+
+fn check_crc(p: &Probe, addr: u32, data: &[u8]) -> Result<(), String> {
+    let output = p.shell(&format!("crc32 {addr:08x} {:x}", data.len()))?;
+    if output.split_whitespace().last().and_then(|s| u32::from_str_radix(s, 16).ok()) != Some(crc32(data)) {
+        return Err(format!("RAM checksum mismatch at {addr:08x}: {output}"));
+    }
+    Ok(())
+}
 
 pub fn crc32(bytes: &[u8]) -> u32 {
     let mut crc = !0u32;
@@ -159,6 +223,34 @@ fn stage_loader(p: &Probe, data: &[u8]) -> Result<(), String> {
 
 pub fn dispatch(ctx: &UsbContext, cmd: &str, args: Vec<String>) -> Result<(), String> {
     match (cmd, args.as_slice()) {
+        ("ram-check-modern" | "ram-launch-modern", [elf, file]) => {
+            let data = read_slot(1, Path::new(file))?;
+            if fs::metadata(elf).map_err(|e| e.to_string())?.len() > 8 << 20 {
+                return Err("ELF exceeds 8MiB".into());
+            }
+            modern_image(&fs::read(elf).map_err(|e| e.to_string())?, &data)?;
+            if cmd == "ram-check-modern" {
+                println!("Validated modern RAM image: {} bytes, CRC32 {:08x}. No device opened.", data.len(), crc32(&data));
+                return Ok(());
+            }
+            let p = Probe::open(ctx)?;
+            if p.revision()? != 53 { return Err("modern handoff requires revision 53 maintenance".into()); }
+            let info = p.shell("bdinfo")?;
+            if !info.lines().any(|line| line.trim() == "relocaddr   = 0x46000000") {
+                return Err("unexpected launching loader address".into());
+            }
+            let caches = p.shell("u2icache off")?;
+            if caches.trim() != "Instruction cache=0 data cache=0; no data-cache changes" {
+                return Err("handoff requires both caches disabled".into());
+            }
+            // `fastboot stage` must have downloaded this exact binary first.
+            check_crc(&p, 0x48000000, &data)?;
+            p.shell(&format!("cp.b 48000000 {MODERN:08x} {:x}", data.len()))?;
+            check_crc(&p, MODERN, &data)?;
+            p.send_command("go 42000000")?;
+            println!("Modern RAM handoff requested; boot not yet confirmed. No NAND writes. Plain Reset restores the installed boot path.");
+            Ok(())
+        },
         ("ram-stage-loader", [file]) => {
             let data = read_slot(1, Path::new(file))?;
             stage_loader(&Probe::open(ctx)?, &data)
@@ -199,13 +291,50 @@ pub fn dispatch(ctx: &UsbContext, cmd: &str, args: Vec<String>) -> Result<(), St
             println!("Linux handoff requested; kernel boot is not yet confirmed. No NAND writes.");
             Ok(())
         },
-        _ => Err("usage: ram-stage-loader FILE | ram-launch-loader FILE | ram-upload kernel|dtb|initramfs FILE | ram-status | ram-boot".into())
+        _ => Err("usage: ram-check-modern ELF BIN | ram-launch-modern ELF BIN | ram-stage-loader FILE | ram-launch-loader FILE | ram-upload kernel|dtb|initramfs FILE | ram-status | ram-boot".into())
     }
 }
 
 #[cfg(test)] mod tests {
     use super::*;
     #[test] fn standard_crc() { assert_eq!(crc32(b"123456789"), 0xcbf43926); assert_eq!(crc32(b""),0); }
+    #[test] fn modern_rejects_mismatch_and_overlap() {
+        let mut elf = vec![0u8; 0x144];
+        let mut bin = vec![0u8; 68];
+        bin[3] = 0xea;
+        elf[..7].copy_from_slice(b"\x7fELF\x01\x01\x01");
+        for (n, v) in [(16, 2u16), (18, 40), (40, 52), (42, 32), (44, 1)] {
+            elf[n..n+2].copy_from_slice(&v.to_le_bytes());
+        }
+        for (n, v) in [(20, 1u32), (24, MODERN), (28, 52), (52, 1), (56, 0x100),
+                      (60, MODERN), (64, MODERN), (68, 68), (72, 68), (76, 7)] {
+            elf[n..n+4].copy_from_slice(&v.to_le_bytes());
+        }
+        elf[0x100..].copy_from_slice(&bin);
+        assert!(modern_image(&elf, &bin).is_ok());
+        for n in 0..elf.len() { assert!(modern_image(&elf[..n], &bin).is_err()); }
+        for (n, v) in [(24, LOADER), (60, LOADER), (64, LOADER), (68, u32::MAX),
+                      (72, 0x100001), (28, u32::MAX)] {
+            let mut broken = elf.clone();
+            broken[n..n+4].copy_from_slice(&v.to_le_bytes());
+            assert!(modern_image(&broken, &bin).is_err());
+        }
+        bin[4] ^= 1;
+        assert!(modern_image(&elf, &bin).is_err());
+        bin[4] ^= 1;
+        // An objcopy-filled gap is allowed, but never an allocated byte.
+        elf.resize(0x144 + 40, 0);
+        elf[32..36].copy_from_slice(&0x144u32.to_le_bytes());
+        elf[46..48].copy_from_slice(&40u16.to_le_bytes());
+        elf[48..50].copy_from_slice(&1u16.to_le_bytes());
+        for (n, v) in [(0x148, 1u32), (0x14c, 2), (0x150, MODERN), (0x158, 64)] {
+            elf[n..n+4].copy_from_slice(&v.to_le_bytes());
+        }
+        bin[67] = 0xff;
+        assert!(modern_image(&elf, &bin).is_ok());
+        bin[63] = 0xff;
+        assert!(modern_image(&elf, &bin).is_err());
+    }
     #[test] fn loader_alignment_and_bounds() {
         assert!(loader_commands(&[0;64]).is_err());
         let mut b=vec![0;68]; b[3]=0xea; b[0x40..0x44].copy_from_slice(&LOADER.to_le_bytes());

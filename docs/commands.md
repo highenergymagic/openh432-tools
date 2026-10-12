@@ -21,7 +21,10 @@ without opening USB. Errors exit nonzero. Waiting commands default to
   No EBOOT replacement command is implemented.
 
 The carrier validator checks size, record checksums, load/entry addresses,
-ECEC/ROMHDR pointers, NK module table and low-address U-Boot link marker.
+ECEC/ROMHDR pointers, NK module table and the loader role. Legacy carriers
+use the low-address U-Boot link word. Modern carriers use an explicit `MUB1`
+entry/length/CRC32 record; the BSP packager validates the code against its ELF
+before creating this record. Raw RAM-entry images are not flashable carriers.
 Only trusted artifacts built for this board should be supplied; structural
 validation is not a signature check.
 

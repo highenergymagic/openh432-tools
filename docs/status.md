@@ -49,6 +49,20 @@ resending it.
 These checks cover those operations on one already-modified development
 device, not the complete stock conversion, all error paths or general recovery.
 
+## Modern loader RAM handoff
+
+`ram-check-modern ELF BIN` validates the fixed H432B ARM RAM-entry role
+without opening a device. `ram-launch-modern ELF BIN` requires revision-53
+maintenance, the expected loader address, disabled caches and matching CRCs
+before and after copying the staged download to `0x42000000`. It does not
+write NAND and does not replace the legacy loader commands.
+
+The handoff has launched U-Boot 2026.10 on one H432B, followed by fresh USB
+enumeration and working fastboot queries, download and console retrieval.
+These results apply to the RAM handoff operation. Separate NAND boot and
+storage-update qualification is documented in the hardware layer's
+[modern U-Boot guide](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/modern-uboot.md).
+
 ## Runtime console tools
 
 Console discovery tolerates sysfs removal during USB disconnect and rejects

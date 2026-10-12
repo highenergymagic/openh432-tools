@@ -205,12 +205,16 @@ unprovisioned pool and expect it to install the OS.
 ## 7. Enable and verify NAND boot
 
 After the pool is provisioned and verified, the BSP target
-`u-boot-h432b-ab-chain` builds the persistent NAND bootstrap carrier at
-`nand-ab-ce-carrier/u-boot-ce.b000ff` within the deploy directory. Validate
+`u-boot-h432b-modern-nand` builds the persistent U-Boot 2026.10 carrier at
+`modern-nand-ce-carrier/u-boot-ce.b000ff` within the deploy directory. Validate
 and explicitly flash that carrier through the same factory OS route. It
 selects an eligible kernel/systembase pair using redundant boot state. The
 historically named `openh432-nand-b.img` and `openh432-systembase-b` outputs
 are slot-independent and can populate either pair.
+The [modern loader reference](https://github.com/highenergymagic/meta-fractalmicro-H432B/blob/main/docs/modern-uboot.md)
+defines fastboot slot commands, download limits and the accessible boot menu.
+The legacy `u-boot-h432b-ab-chain` remains a distinct two-stage migration
+target; its artifact directory is `nand-ab-ce-carrier`.
 For the standard OS, install the `.squashfs.verity` systembase and its matching
 kernel bundle together. Systembase volumes require UBI's `--skipcheck` creation
 flag; do not enable it on unverified legacy roots. The target-side
