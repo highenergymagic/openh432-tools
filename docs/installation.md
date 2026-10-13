@@ -19,8 +19,9 @@ the internal SD card. The final bootstrap loads Linux from NAND.
 
 Current NAND boots use a minimal initramfs to mount a separate SquashFS
 systembase and start systemd, BRLTTY and an interactive local `user` console.
-Writable state is volatile; this is not a finished accessible desktop,
-persistent userdata, or dual boot with CE.
+Writable state is volatile by default. Persistent images require separate,
+explicit internal-SD provisioning and a matching system extension. Neither
+configuration provides a finished accessible desktop or dual boot with CE.
 
 ## Before you begin
 
@@ -220,6 +221,18 @@ kernel bundle together. Systembase volumes require UBI's `--skipcheck` creation
 flag; do not enable it on unverified legacy roots. The target-side
 [inactive-slot installer](commands.md#inactive-slot-verity-installation)
 migrates one existing slot without modifying the active pair.
+
+For `--storage-mode persistent` images, provision internal SD separately using
+the distribution's [storage maintenance interface](https://github.com/highenergymagic/meta-fractalmicro-openh432/blob/main/docs/persistent-storage.md#provisioning-and-reset-requirements).
+Initial provisioning replaces all internal-SD contents; it is not part of the
+NAND-only installer or a side effect of boot. Once provisioned, install the
+matched extension, systembase and kernel to the inactive slot through the
+[three-image fastboot workflow](https://github.com/highenergymagic/meta-fractalmicro-openh432/blob/main/docs/persistent-storage.md#slot-updates).
+The loader verifies the set before activation. Ordinary Android fastboot
+automatically splits images larger than its per-download buffer; use the raw
+build artifacts, not a custom host uploader. Read the loader's transfer
+restrictions before starting an update. The legacy NAND-pair installer does
+not coordinate extension updates and is not the persistent-image update path.
 
 The target-side `h432b-bootstate-check --emit-initial-b` emits an initial
 B-only state record to standard output; it does not provision or write NAND.

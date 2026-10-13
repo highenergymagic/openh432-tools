@@ -52,6 +52,11 @@ updates a matching kernel/verity-root pair and verifies NAND readback. It is
 not an authenticated update service; older slot-B scripts do not implement
 verity migration. Read the installation guide before modifying eligible slots.
 
+Provisioned persistent-storage devices use the modern loader's standard
+Android fastboot interface to update matching kernel, systembase and system
+extension images. The [persistent-storage guide](https://github.com/highenergymagic/meta-fractalmicro-openh432/blob/main/docs/persistent-storage.md#slot-updates)
+defines this three-image workflow; the NAND-only installer does not update MMC.
+
 ## Documentation
 
 - [Installation](docs/installation.md): stock CE conversion and NAND deployment.
